@@ -15,7 +15,7 @@ then
     chown logstash:logstash /var/log/suricata/eve.json.fifo 
     touch /var/log/suricata/eve.json 
     chown logstash:logstash /var/log/suricata/eve.json 
-    nohup /root/luhnmask.pl 
+    nohup /root/luhnmask.pl &
     disown
     systemctl restart suricata
 fi
