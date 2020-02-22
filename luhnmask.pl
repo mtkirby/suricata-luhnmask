@@ -6,15 +6,20 @@ use strict;
 
 # https://baymard.com/checkout-usability/credit-card-patterns
 
+$|++;
+
 open(FD,"<","/var/log/suricata/eve.json.fifo");
 while(<FD>) {
+    if ( $_ !~ /Possible card number detected in clear text/ ) {
+        open(EJ,">>","/var/log/suricata/eve.json");
+        print EJ $_;
+        close(EJ);
+        next;
+    }
     my $foundluhn = 0;
-    next unless ( $_ =~ /Possible card number detected in clear text/ );
-    my $line = $_;
     my $blob;
     my @blobs;
-    #@blobs = ( $line =~ m/([\D\s]|^)([2-9]\d{3}-\d{4}-\d{4}-\d{4}-\d{3}|
-    @blobs = ( $line =~ m/([2-9]\d{3}-\d{4}-\d{4}-\d{4}-\d{3}|
+    @blobs = ( $_ =~ m/([2-9]\d{3}-\d{4}-\d{4}-\d{4}-\d{3}|
         [2-9]\d{3}-\d{4}-\d{4}-\d{4}|
         [2-9]\d{3}-\d{4}-\d{5}|
         [2-9]\d{3}-\d{5}-\d{6}|
@@ -33,9 +38,9 @@ while(<FD>) {
         [2-9]\d{14,18})([\D\s\Z\z]|$)/xg );
         
     foreach $blob ( @blobs ) {
-        #print "FOUND MATCHED LINE: $line\n";
+        #print "FOUND MATCHED LINE: $_\n";
         next if not ( $blob =~ m/\d/g );
-        if ( $line =~ m/[\d\.]${blob}/g ) {
+        if ( $_ =~ m/[\d\.]${blob}/g ) {
             #print "skipping $blob\n";
             next;
         }
@@ -45,17 +50,15 @@ while(<FD>) {
         #print "testing $match $strippedmatch\n";
         if ( is_valid("$strippedmatch")) {
             #print "THIS IS A CARD $strippedmatch\n";
-            #$line =~ s/$match/LUHN_ALGORITHM_${strippedmatch}_MATCHED/g;
-            $line =~ s/$match/LUHN_ALGORITHM_MATCHED/g;
+            $_ =~ s/$match/LUHN_ALGORITHM_MATCHED/g;
             $foundluhn = 1;
         }
-        #print "blob " . $blob . "\n";
     }
-    if ( $foundluhn == 1 ) {
-        $line =~ s/"payload":"[^"]+"/"payload":""/g;
-        $line =~ s/"packet":"[^"]+"/"packet":""/g;
+    if ( $foundluhn eq 1 ) {
+        $_ =~ s/"payload":"[^"]+"/"payload":""/g;
+        $_ =~ s/"packet":"[^"]+"/"packet":""/g;
         open(EJ,">>","/var/log/suricata/eve.json");
-        print EJ $line;
+        print EJ $_;
         close(EJ);
     }
 }
