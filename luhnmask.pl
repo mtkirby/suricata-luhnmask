@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# 20200222 Kirby
+# 20200223 Kirby
 
 use Algorithm::LUHN qw/check_digit is_valid/;
 use strict;
@@ -41,6 +41,10 @@ while(<FD>) {
         #print "FOUND MATCHED LINE: $_\n";
         next if not ( $blob =~ m/\d/g );
         if ( $_ =~ m/[\d\.]${blob}/g ) {
+            #print "skipping $blob\n";
+            next;
+        }
+        if ( $_ =~ m/flow_id":$blob/g ) {
             #print "skipping $blob\n";
             next;
         }
