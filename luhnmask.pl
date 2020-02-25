@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# 20200223 Kirby
+# 20200224 Kirby
 
 use Algorithm::LUHN qw/check_digit is_valid/;
 use strict;
@@ -35,29 +35,28 @@ while(<FD>) {
         [2-9]\d{3}\s\d{7}\s\d{4}|
         [2-9]\d{5}-\d{13}|
         [2-9]\d{5}\s\d{13}|
-        [2-9]\d{14,18})([\D\s\Z\z]|$)/xg );
-        
+        [2-9]\d{14,18})([\W\D\s\Z\z]|$)/xg );
+
     foreach $blob ( @blobs ) {
         #print "FOUND MATCHED LINE: $_\n";
         next if not ( $blob =~ m/\d/g );
-        if ( $_ =~ m/[\d\.]${blob}/g ) {
-            #print "skipping $blob\n";
-            next;
-        }
-        if ( $_ =~ m/flow_id":$blob/g ) {
-            #print "skipping $blob\n";
-            next;
-        }
-        my $match = $blob;
-        my $strippedmatch = $match;
-        $strippedmatch =~ s/(\s|-)//g;
-        #print "testing $match $strippedmatch\n";
-        if ( is_valid("$strippedmatch")) {
-            #print "THIS IS A CARD $strippedmatch\n";
-            $_ =~ s/$match/LUHN_ALGORITHM_MATCHED/g;
+        next if ( $_ =~ m/flow_id":$blob/g );
+        next if ( $_ =~ m/etag: \S+$blob/g );
+        next if ( $_ =~ m/cookie":" [^:]+$blob/g );
+        next if ( $_ =~ m/Cookie: \S+$blob/g );
+        next if ( $_ =~ m/Location: \S+$blob/g );
+        next if ( $_ =~ m/[\d\.%-;A-Za-z]$blob/g );
+        next if ( $_ =~ m/$blob[-:;\/A-Za-z]/g );
+        my $stripblob = $blob;
+        $stripblob =~ s/(\s|-)//g;
+        #print "testing $blob $stripblob\n";
+        if ( is_valid("$stripblob")) {
+            #print "THIS IS A CARD $stripblob\n";
+            $_ =~ s/$blob/LUHN_ALGORITHM_MATCHED/g;
             $foundluhn = 1;
         }
     }
+
     if ( $foundluhn eq 1 ) {
         $_ =~ s/"payload":"[^"]+"/"payload":""/g;
         $_ =~ s/"packet":"[^"]+"/"packet":""/g;
