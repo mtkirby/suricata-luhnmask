@@ -1,5 +1,5 @@
 #!/bin/bash
-# 20200222 Kirby
+# 20200227 Kirby
 
 if egrep -q "eve.json$" /etc/suricata/*.yaml \
 || ! pgrep -f luhnmask.pl >/dev/null 2>&1
@@ -15,7 +15,6 @@ then
     chown logstash:logstash /var/log/suricata/eve.json.fifo 
     touch /var/log/suricata/eve.json 
     chown logstash:logstash /var/log/suricata/eve.json 
-    nohup /root/luhnmask.pl &
-    disown
+    /root/luhnmask.pl 
     systemctl restart suricata
 fi

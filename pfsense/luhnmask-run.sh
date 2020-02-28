@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-# 20200223 Kirby
+# 20200227 Kirby
 
 
 # CHANGE SYSLOGSERVER TO YOUR SYSLOG SERVER
@@ -25,8 +25,7 @@ then
     done
     for fifo in $(find /var/log/suricata -name 'eve.json' -type p)
     do
-        nohup /root/luhnmask.pl "$fifo" SYSLOGSERVER 514 &
-        disown
+        /root/luhnmask.pl "$fifo" SYSLOGSERVER 514
     done
 
     for pid in $(ps aux|grep -v awk |awk '/suricata/ {print $2}')
