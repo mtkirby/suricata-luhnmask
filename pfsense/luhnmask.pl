@@ -1,7 +1,8 @@
 #!/usr/bin/env perl
-# 20200227 Kirby
+# 20200402 Kirby
 
 use Algorithm::LUHN qw/check_digit is_valid/;
+use Sys::Syslog qw(:standard :macros setlogsock);
 use strict;
 
 # https://baymard.com/checkout-usability/credit-card-patterns
@@ -15,10 +16,20 @@ my $file=$ARGV[0];
 my $syslog=$ARGV[1];
 my $syslogport=$ARGV[2];
 
+my $program='suricata';
+
+openlog('luhnmask.pl', "ndelay,pid", "daemon");
+setlogsock({ type => "udp", host => "$syslog", port => "$syslogport" });
+syslog('info', "luhnmask.pl starting up");
+closelog();
+
 open(FD,"<","$file");
 while(<FD>) {
     if ( $_ !~ /Possible card number detected in clear text/ ) {
-        `logger -h $syslog -P $syslogport -t suricata $_`;
+        openlog($program, "ndelay,pid", "daemon");
+        setlogsock({ type => "udp", host => "$syslog", port => "$syslogport" });
+        syslog('info', "$_");
+        closelog();
         next;
     }
     my $src_ip = $1 if ( $_ =~ m|"src_ip":"([^"]+)"| );
@@ -81,7 +92,10 @@ while(<FD>) {
         next if ( $stripblob =~ m/5555555555554444/g );
         next if ( $stripblob =~ m/378282246310005/g );
 
-        #print "testing $blob $stripblob\n";
+        # skip dates
+        next if ( $stripblob =~ m/20[0-2][0-9][01][0-9][0-3]\d+/g );
+
+
         if ( is_valid("$stripblob")) {
             #print "THIS IS A CARD $stripblob\n";
             $_ =~ s/$blob/LUHN_ALGORITHM_MATCHED/g;
@@ -103,7 +117,10 @@ while(<FD>) {
         # threshold to alert
         if ( $sh{$hash}{count} >= 10 ) {
             foreach $line (@{ $sh{$hash}{lines} }) {
-                `logger -h $syslog -P $syslogport -t suricata $_`;
+                openlog($program, "ndelay,pid", "daemon");
+                setlogsock({ type => "udp", host => "$syslog", port => "$syslogport" });
+                syslog('info', "$_");
+                closelog();
             }
             delete $sh{$hash};
         }
@@ -119,6 +136,5 @@ while(<FD>) {
 
 }
 close(FD);
-
 
 

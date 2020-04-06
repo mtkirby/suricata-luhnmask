@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# 20200227 Kirby
+# 20200302 Kirby
 
 use Algorithm::LUHN qw/check_digit is_valid/;
 use strict;
@@ -78,6 +78,9 @@ while(<FD>) {
         next if ( $stripblob =~ m/4242424242424242/g );
         next if ( $stripblob =~ m/5555555555554444/g );
         next if ( $stripblob =~ m/378282246310005/g );
+
+        # skip test cards
+        next if ( $stripblob =~ m/20[0-2][0-9][01][0-9][0-3]\d+/g );
 
         #print "testing $blob $stripblob\n";
         if ( is_valid("$stripblob")) {
